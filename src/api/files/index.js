@@ -1,5 +1,6 @@
 import Express from "express";
 import multer from "multer";
+import { saveCoverImage } from "../../lib/fs-tools.js";
 
 const filesRouter = Express.Router();
 
@@ -10,6 +11,7 @@ filesRouter.post(
     //uploadCover here must be match with the FE and postman when upload... (link)
     try {
       console.log("FILE:", req.file);
+      await saveCoverImage(req.file.originalname, req.file.buffer);
       res.send({ message: "file uploaded" });
     } catch (error) {
       next(error);
