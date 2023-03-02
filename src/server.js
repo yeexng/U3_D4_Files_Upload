@@ -10,6 +10,7 @@ import {
 } from "./errorsHandler.js";
 import cors from "cors";
 import filesRouter from "./api/files/index.js";
+import filesAvatarRouter from "./api/files/avatarFile.js";
 
 const server = Express();
 const port = 3009;
@@ -17,6 +18,7 @@ server.use(cors());
 server.use(Express.json()); // if don't add all req body will be undefined
 
 server.use("/authors", authorsRouter); //here will be adding the middle-part of the url
+server.use("/authors", filesAvatarRouter);
 server.use("/blogPosts", blogPostsRouter);
 server.use("/blogPosts", filesRouter);
 
