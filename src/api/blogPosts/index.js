@@ -1,25 +1,15 @@
 import Express from "express";
-import fs from "fs";
-import { fileURLToPath } from "url";
-import { dirname, join } from "path";
 import uniqid from "uniqid";
 import createHttpError from "http-errors";
 import { checkBlogPostSchema, triggerBadRequest } from "./validation.js"; //=> this will sometimes failed in auto-complete, make sure to check and ad .js
-
+import { getBlogPosts, writeBlogPosts } from "../../lib/fs-tools.js";
 const blogPostsRouter = Express.Router();
-const blogPostsJSONPath = join(
-  dirname(fileURLToPath(import.meta.url)),
-  "blogPosts.json"
-);
-const getBlogPosts = () => JSON.parse(fs.readFileSync(blogPostsJSONPath));
-const writeBlogPosts = (blogPostsArray) =>
-  fs.writeFileSync(blogPostsJSONPath, JSON.stringify(blogPostsArray));
 
 blogPostsRouter.post(
   "/",
   checkBlogPostSchema,
   triggerBadRequest,
-  (req, res, next) => {
+  async (req, res, next) => {
     const newBlogPost = {
       ...req.body,
       id: uniqid(),
@@ -28,15 +18,15 @@ blogPostsRouter.post(
       updatedAt: new Date(),
     };
 
-    const blogPostsArray = getBlogPosts();
+    const blogPostsArray = await getBlogPosts();
     blogPostsArray.push(newBlogPost);
     writeBlogPosts(blogPostsArray);
     res.status(201).send({ id: newBlogPost.id });
   }
 );
 
-blogPostsRouter.get("/", (req, res, next) => {
-  const blogPosts = getBlogPosts();
+blogPostsRouter.get("/", async (req, res, next) => {
+  const blogPosts = await getBlogPosts();
   if (req.query && req.query.category) {
     const filteredBlogPosts = blogPosts.filter(
       (b) => b.category === req.query.category
@@ -47,9 +37,9 @@ blogPostsRouter.get("/", (req, res, next) => {
   }
 });
 
-blogPostsRouter.get("/:blogPostId", (req, res, next) => {
+blogPostsRouter.get("/:blogPostId", async (req, res, next) => {
   try {
-    const blogPostsArray = getBlogPosts();
+    const blogPostsArray = await getBlogPosts();
     const foundBlogPosts = blogPostsArray.find(
       (b) => b.id === req.params.blogPostId
     ); //refer to the router
@@ -66,9 +56,9 @@ blogPostsRouter.get("/:blogPostId", (req, res, next) => {
   }
 });
 
-blogPostsRouter.put("/:blogPostId", (req, res, next) => {
+blogPostsRouter.put("/:blogPostId", async (req, res, next) => {
   try {
-    const blogPostsArray = getBlogPosts();
+    const blogPostsArray = await getBlogPosts();
     const index = blogPostsArray.findIndex(
       (b) => b.id === req.params.blogPostId
     );
@@ -89,9 +79,9 @@ blogPostsRouter.put("/:blogPostId", (req, res, next) => {
   }
 });
 
-blogPostsRouter.delete("/:blogPostId", (req, res, next) => {
+blogPostsRouter.delete("/:blogPostId", async (req, res, next) => {
   try {
-    const blogPostsArray = getBlogPosts();
+    const blogPostsArray = await getBlogPosts();
     const remainingPosts = blogPostsArray.filter(
       (b) => b.id !== req.params.blogPostId
     );
