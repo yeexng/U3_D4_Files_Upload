@@ -9,6 +9,7 @@ import {
   unauthorizedHandler,
 } from "./errorsHandler.js";
 import cors from "cors";
+import filesRouter from "./api/files/index.js";
 
 const server = Express();
 const port = 3009;
@@ -17,6 +18,7 @@ server.use(Express.json()); // if don't add all req body will be undefined
 
 server.use("/authors", authorsRouter); //here will be adding the middle-part of the url
 server.use("/blogPosts", blogPostsRouter);
+server.use("/blogPosts", filesRouter);
 
 //Error needs to be imported after all the endpoints... the arrangement is important...
 server.use(badRequestHandler); //400

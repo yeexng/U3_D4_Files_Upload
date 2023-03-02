@@ -10,30 +10,40 @@ blogPostsRouter.post(
   checkBlogPostSchema,
   triggerBadRequest,
   async (req, res, next) => {
-    const newBlogPost = {
-      ...req.body,
-      id: uniqid(),
-      avatar: `https://ui-avatars.com/api/?name=${req.body.name}+${req.body.surname}`,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
+    try {
+      const newBlogPost = {
+        ...req.body,
+        id: uniqid(),
+        avatar: `https://ui-avatars.com/api/?name=${req.body.name}+${req.body.surname}`,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
 
-    const blogPostsArray = await getBlogPosts();
-    blogPostsArray.push(newBlogPost);
-    writeBlogPosts(blogPostsArray);
-    res.status(201).send({ id: newBlogPost.id });
+      const blogPostsArray = await getBlogPosts();
+      blogPostsArray.push(newBlogPost);
+      writeBlogPosts(blogPostsArray);
+      res.status(201).send({ id: newBlogPost.id });
+    } catch (error) {
+      console.log(error);
+      next(error);
+    }
   }
 );
 
 blogPostsRouter.get("/", async (req, res, next) => {
-  const blogPosts = await getBlogPosts();
-  if (req.query && req.query.category) {
-    const filteredBlogPosts = blogPosts.filter(
-      (b) => b.category === req.query.category
-    );
-    res.send(filteredBlogPosts);
-  } else {
-    res.send(blogPosts);
+  try {
+    const blogPosts = await getBlogPosts();
+    if (req.query && req.query.category) {
+      const filteredBlogPosts = blogPosts.filter(
+        (b) => b.category === req.query.category
+      );
+      res.send(filteredBlogPosts);
+    } else {
+      res.send(blogPosts);
+    }
+  } catch (error) {
+    console.log(error);
+    next(error);
   }
 });
 
