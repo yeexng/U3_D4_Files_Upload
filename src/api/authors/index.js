@@ -2,28 +2,33 @@ import Express from "express";
 import uniqid from "uniqid";
 import createHttpError from "http-errors";
 import { getAuthors, writeAuthors } from "../../lib/fs-tools.js";
-
+import { checkAuthorSchema, triggerBadRequest } from "./validation.js";
 const authorsRouter = Express.Router();
 
-authorsRouter.post("/", async (req, res, next) => {
-  try {
-    const newAuthor = {
-      ...req.body,
-      id: uniqid(),
-      avatar: `https://ui-avatars.com/api/?name=${req.body.name}+${req.body.surname}`,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
+authorsRouter.post(
+  "/",
+  checkAuthorSchema,
+  triggerBadRequest,
+  async (req, res, next) => {
+    try {
+      const newAuthor = {
+        ...req.body,
+        id: uniqid(),
+        avatar: `https://ui-avatars.com/api/?name=${req.body.name}+${req.body.surname}`,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
 
-    const authorsArray = await getAuthors();
-    authorsArray.push(newAuthor);
-    writeAuthors(authorsArray);
-    res.status(201).send({ id: newAuthor.id });
-  } catch (error) {
-    console.log(error);
-    next(error);
+      const authorsArray = await getAuthors();
+      authorsArray.push(newAuthor);
+      writeAuthors(authorsArray);
+      res.status(201).send({ id: newAuthor.id });
+    } catch (error) {
+      console.log(error);
+      next(error);
+    }
   }
-});
+);
 
 authorsRouter.get("/", async (req, res, next) => {
   try {
