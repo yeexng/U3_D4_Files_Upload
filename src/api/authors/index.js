@@ -1,83 +1,99 @@
 import Express from "express";
-import fs from "fs";
-import { dirname, join } from "path";
-import { fileURLToPath } from "url";
 import uniqid from "uniqid";
+import createHttpError from "http-errors";
+import { getAuthors, writeAuthors } from "../../lib/fs-tools.js";
 
 const authorsRouter = Express.Router();
 
-//in local path
-// console.log(import.meta.url);
-// console.log(fileURLToPath(import.meta.url));
-// console.log(dirname(fileURLToPath(import.meta.url))); //completed path
-const authorsJSONPath = join(
-  dirname(fileURLToPath(import.meta.url)),
-  "authors.json"
-); //use join not +, make sure the braces placement
-console.log("TARGET:", authorsJSONPath);
+authorsRouter.post("/", async (req, res, next) => {
+  try {
+    const newAuthor = {
+      ...req.body,
+      id: uniqid(),
+      avatar: `https://ui-avatars.com/api/?name=${req.body.name}+${req.body.surname}`,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
 
-//for different methods
-authorsRouter.post("/", (req, res) => {
-  console.log("Request body", req.body);
-  //adding object to the array
-  const newAuthors = {
-    ...req.body,
-    id: uniqid(),
-  };
-
-  const authorsArray = JSON.parse(fs.readFileSync(authorsJSONPath));
-  //   const emailExisted = ;
-
-  if (authorsArray.some((author) => author.email === req.body.email)) {
-    res.send("Email existed, please change a new one");
-  } else {
-    authorsArray.push(newAuthors);
-    fs.writeFileSync(authorsJSONPath, JSON.stringify(authorsArray));
-    res.status(201).send({ id: newAuthors.id });
+    const authorsArray = await getAuthors();
+    authorsArray.push(newAuthor);
+    writeAuthors(authorsArray);
+    res.status(201).send({ id: newAuthor.id });
+  } catch (error) {
+    console.log(error);
+    next(error);
   }
 });
 
-authorsRouter.get("/", (req, res) => {
-  const fileContent = fs.readFileSync(authorsJSONPath);
-  console.log("FILE CONTENT:", fileContent); // return random numbers
-  console.log("FILE CONTENT:", JSON.parse(fileContent));
-  const authorsArray = JSON.parse(fileContent);
-  res.send(authorsArray);
+authorsRouter.get("/", async (req, res, next) => {
+  try {
+    const authors = await getAuthors();
+    res.send(authors);
+  } catch (error) {
+    console.log(error);
+    next(error);
+  }
 });
 
-authorsRouter.get("/:authorId", (req, res) => {
-  //obtain ID
-  //   console.log("USER ID:", req.params.authorId);
-  const authorsArray = JSON.parse(fs.readFileSync(authorsJSONPath));
-  const author = authorsArray.find(
-    (author) => author.id === req.params.authorId
-  );
-
-  res.send(author);
+authorsRouter.get("/:authorId", async (req, res, next) => {
+  try {
+    const authorsArray = await getAuthors();
+    const foundAuthor = authorsArray.find((a) => a.id === req.params.authorId);
+    if (foundAuthor) {
+      res.send(foundAuthor);
+    } else {
+      next(
+        createHttpError(404, `Blog with id ${req.params.authorId} not found!`)
+      );
+    }
+  } catch (error) {
+    console.log(error);
+    next(error);
+  }
 });
 
-authorsRouter.put("/:authorId", (req, res) => {
-  const authorsArray = JSON.parse(fs.readFileSync(authorsJSONPath));
-
-  const index = authorsArray.findIndex(
-    (author) => author.id === req.params.authorId
-  );
-  const oldAuthor = authorsArray[index];
-  const updatedAuthor = { ...oldAuthor, ...req.body, updatedAt: new Date() };
-  authorsArray[index] = updatedAuthor;
-  fs.writeFileSync(authorsJSONPath, JSON.stringify(authorsArray));
-
-  res.send(updatedAuthor);
+authorsRouter.put("/:authorId", async (req, res, next) => {
+  try {
+    const authorsArray = await getAuthors();
+    const index = authorsArray.findIndex((a) => a.id === req.params.authorId);
+    if (index !== -1) {
+      const oldAuthor = authorsArray[index];
+      const updatedAuthor = {
+        ...oldAuthor,
+        ...req.body,
+        updatedAt: new Date(),
+      };
+      authorsArray[index] = updatedAuthor;
+      writeAuthors(authorsArray);
+      res.send(updatedAuthor);
+    } else {
+      next(
+        createHttpError(404, `Blog with id ${req.params.authorId} not found!`)
+      );
+    }
+  } catch (error) {
+    console.log(error);
+    next(error);
+  }
 });
 
-authorsRouter.delete("/:authorId", (req, res) => {
-  const authorsArray = JSON.parse(fs.readFileSync(authorsJSONPath));
-  const remainingAuthors = authorsArray.filter(
-    (author) => author.id !== req.params.authorId
-  );
-
-  fs.writeFileSync(authorsJSONPath, JSON.stringify(remainingAuthors));
-  res.status(204).send();
+authorsRouter.delete("/:authorId", async (req, res, next) => {
+  try {
+    const authorsArray = await getAuthors();
+    const remainingAuthors = authorsArray.filter(
+      (author) => author.id !== req.params.authorId
+    );
+    if (authorsArray.length !== remainingAuthors.length) {
+      writeAuthors(remainingAuthors);
+      res.status(204).send();
+    } else {
+      next(
+        createHttpError(404, `Blog with id ${req.params.authorId} not found!`)
+      );
+    }
+  } catch (error) {
+    next(error);
+  }
 });
 
 export default authorsRouter;
