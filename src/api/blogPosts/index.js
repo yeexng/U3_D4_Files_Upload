@@ -21,7 +21,7 @@ blogPostsRouter.post(
 
       const blogPostsArray = await getBlogPosts();
       blogPostsArray.push(newBlogPost);
-      writeBlogPosts(blogPostsArray);
+      await writeBlogPosts(blogPostsArray);
       res.status(201).send({ id: newBlogPost.id });
     } catch (error) {
       console.log(error);
@@ -103,6 +103,35 @@ blogPostsRouter.delete("/:blogPostId", async (req, res, next) => {
         createHttpError(404, `Book with id ${req.params.bookId} not found!`)
       );
     }
+  } catch (error) {
+    next(error);
+  }
+});
+
+blogPostsRouter.post("/:id/comments", async (req, res, next) => {
+  try {
+    const newComment = {
+      ...req.body,
+      comment_id: uniqid(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    const blogPostsArray = await getBlogPosts();
+    const index = blogPostsArray.findIndex((b) => b.id === req.params.id);
+    blogPostsArray[index].comments.push(newComment);
+    await writeBlogPosts(blogPostsArray);
+    res.status(201).send("Comment Posted");
+  } catch (error) {
+    console.log(error);
+    next(error);
+  }
+});
+
+blogPostsRouter.get("/:id/comments", async (req, res, next) => {
+  try {
+    const blogPostsArray = await getBlogPosts();
+    const index = blogPostsArray.findIndex((b) => b.id === req.params.id);
+    res.send(blogPostsArray[index].comments);
   } catch (error) {
     next(error);
   }
