@@ -11,9 +11,14 @@ import {
 import cors from "cors";
 import filesRouter from "./api/files/index.js";
 import filesAvatarRouter from "./api/files/avatarFile.js";
+import { join } from "path";
 
 const server = Express();
 const port = 3009;
+const publicFolderPath = join(process.cwd(), "./public");
+// /Users/xuanng/Desktop/Epicode/Untitled/public
+console.log("Public Path:", publicFolderPath);
+server.use(Express.static(publicFolderPath));
 server.use(cors());
 server.use(Express.json()); // if don't add all req body will be undefined
 
